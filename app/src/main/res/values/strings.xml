@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyApp</string>
+    <string name="text">Authorized Personnel Only. All access is encrypted
+and logged in real-time. Unauthorized attempts will
+be prosecuted.</string>
+    <string name="label___badge_id_or_email">Badge ID or Email</string>
+    <string name="enter_credentials">Enter credentials</string>
+    <string name="label___secure_password">Secure Password</string>
+    <string name="________">••••••••</string>
+</resources>
