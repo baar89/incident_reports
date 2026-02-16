@@ -60,16 +60,8 @@ public class TaskListActivity extends AppCompatActivity {
     }
 
     private void fetchAssignedTasks() {
-        String responderId = sessionManager.getResponderId();
-        if (responderId.isEmpty()) {
-            txtEmpty.setVisibility(View.VISIBLE);
-            txtEmpty.setText("No linked responder ID on your admin account. Please set admins.extension to your responders record ID.");
-            return;
-        }
-
-        txtEmpty.setText("No assigned incidents found.");
         setLoading(true);
-        apiHelper.fetchAssignedIncidents(sessionManager.getToken(), responderId, new PocketBaseApiHelper.IncidentListCallback() {
+        apiHelper.fetchAssignedIncidents(sessionManager.getToken(), sessionManager.getUserId(), new PocketBaseApiHelper.IncidentListCallback() {
             @Override
             public void onSuccess(List<IncidentReport> incidents) {
                 setLoading(false);
