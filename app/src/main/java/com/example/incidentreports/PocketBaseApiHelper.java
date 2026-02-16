@@ -1,7 +1,5 @@
 package com.example.incidentreports;
 
-import static com.example.incidentreports.BuildConfig.POCKETBASE_URL;
-
 import android.content.Context;
 import android.net.Uri;
 
@@ -32,7 +30,7 @@ import java.util.Map;
  * - PATCH /api/collections/incident_reports/records/{recordId}
  */
 public class PocketBaseApiHelper {
-    public static final String BASE_URL = POCKETBASE_URL;
+    public static final String BASE_URL = "http://10.0.2.2:8090";
 
     private final RequestQueue requestQueue;
 
@@ -81,9 +79,9 @@ public class PocketBaseApiHelper {
                     try {
                         String token = response.getString("token");
                         JSONObject record = response.getJSONObject("record");
-                        String responderId = record.optString("extension", "");
+                        String userId = record.getString("id");
                         String fullName = record.optString("first_name", "") + " " + record.optString("last_name", "");
-                        callback.onSuccess(token, responderId.trim(), fullName.trim());
+                        callback.onSuccess(token, userId.trim(), fullName.trim());
                     } catch (JSONException e) {
                         callback.onError("Unable to parse login response.");
                     }

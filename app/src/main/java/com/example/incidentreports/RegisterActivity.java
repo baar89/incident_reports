@@ -1,29 +1,20 @@
 package com.example.incidentreports;
 
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextUtils;
-import android.text.TextWatcher;
-import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 public class RegisterActivity extends AppCompatActivity {
-    private static final int MIN_PASSWORD_LENGTH = 8;
-
     private EditText edtFirstName;
     private EditText edtLastName;
     private EditText edtPosition;
     private EditText edtEmail;
     private EditText edtPassword;
-    private TextView txtPasswordIndicator;
-    private TextView txtEmailIndicator;
     private ProgressBar progressBar;
 
     private PocketBaseApiHelper apiHelper;
@@ -40,67 +31,10 @@ public class RegisterActivity extends AppCompatActivity {
         edtPosition = findViewById(R.id.edtPosition);
         edtEmail = findViewById(R.id.edtRegisterEmail);
         edtPassword = findViewById(R.id.edtRegisterPassword);
-        txtPasswordIndicator = findViewById(R.id.txtPasswordIndicator);
-        txtEmailIndicator = findViewById(R.id.txtEmailIndicator);
         Button btnRegister = findViewById(R.id.btnRegister);
         progressBar = findViewById(R.id.progressRegister);
 
-        bindEmailIndicator();
-        bindPasswordIndicator();
         btnRegister.setOnClickListener(v -> register());
-    }
-
-
-    private void bindEmailIndicator() {
-        edtEmail.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // no-op
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String email = s == null ? "" : s.toString().trim();
-                if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    txtEmailIndicator.setText("Email format must be valid (example: name@email.com)");
-                    txtEmailIndicator.setTextColor(getColor(android.R.color.holo_red_dark));
-                } else {
-                    txtEmailIndicator.setText("Email format is valid");
-                    txtEmailIndicator.setTextColor(getColor(android.R.color.holo_green_dark));
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                // no-op
-            }
-        });
-    }
-
-    private void bindPasswordIndicator() {
-        edtPassword.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // no-op
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                int currentLength = s == null ? 0 : s.length();
-                if (currentLength < MIN_PASSWORD_LENGTH) {
-                    txtPasswordIndicator.setText("Password must be at least 8 characters (" + currentLength + "/8)");
-                    txtPasswordIndicator.setTextColor(getColor(android.R.color.holo_red_dark));
-                } else {
-                    txtPasswordIndicator.setText("Password length is valid (" + currentLength + "/8+) ");
-                    txtPasswordIndicator.setTextColor(getColor(android.R.color.holo_green_dark));
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                // no-op
-            }
-        });
     }
 
     private void register() {
@@ -110,7 +44,8 @@ public class RegisterActivity extends AppCompatActivity {
         String email = edtEmail.getText().toString().trim();
         String password = edtPassword.getText().toString().trim();
 
-        if (!validateInputs(firstName, lastName, position, email, password)) {
+        if (firstName.isEmpty() || lastName.isEmpty() || position.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "All fields are required.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -129,67 +64,6 @@ public class RegisterActivity extends AppCompatActivity {
                 Toast.makeText(RegisterActivity.this, "Registration failed: " + message, Toast.LENGTH_LONG).show();
             }
         });
-    }
-
-    private boolean validateInputs(String firstName,
-                                   String lastName,
-                                   String position,
-                                   String email,
-                                   String password) {
-        clearErrors();
-
-        if (TextUtils.isEmpty(firstName)) {
-            edtFirstName.setError("First name is required");
-            edtFirstName.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(lastName)) {
-            edtLastName.setError("Last name is required");
-            edtLastName.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(position)) {
-            edtPosition.setError("Position is required");
-            edtPosition.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(email)) {
-            edtEmail.setError("Email is required");
-            edtEmail.requestFocus();
-            return false;
-        }
-
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            edtEmail.setError("Enter a valid email address");
-            edtEmail.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(password)) {
-            edtPassword.setError("Password is required");
-            edtPassword.requestFocus();
-            return false;
-        }
-
-        if (password.length() < MIN_PASSWORD_LENGTH) {
-            edtPassword.setError("Password must be at least 8 characters");
-            edtPassword.requestFocus();
-            Toast.makeText(this, "Password should be 8 characters minimum.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-
-        return true;
-    }
-
-    private void clearErrors() {
-        edtFirstName.setError(null);
-        edtLastName.setError(null);
-        edtPosition.setError(null);
-        edtEmail.setError(null);
-        edtPassword.setError(null);
     }
 
     private void setLoading(boolean loading) {

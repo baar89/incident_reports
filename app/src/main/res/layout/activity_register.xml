@@ -16,36 +16,26 @@
             android:textSize="22sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Required fields: First name, Last name, Position, Email, Password (min 8 chars)."
-            android:textSize="12sp" />
-
         <EditText
             android:id="@+id/edtFirstName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:hint="First name"
-            android:inputType="textPersonName" />
+            android:hint="First name" />
 
         <EditText
             android:id="@+id/edtLastName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Last name"
-            android:inputType="textPersonName" />
+            android:hint="Last name" />
 
         <EditText
             android:id="@+id/edtPosition"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Position"
-            android:inputType="textCapWords" />
+            android:hint="Position" />
 
         <EditText
             android:id="@+id/edtRegisterEmail"
@@ -55,15 +45,6 @@
             android:hint="Email"
             android:inputType="textEmailAddress" />
 
-
-        <TextView
-            android:id="@+id/txtEmailIndicator"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Email format must be valid (example: name@email.com)"
-            android:textColor="@android:color/holo_red_dark"
-            android:textSize="12sp" />
         <EditText
             android:id="@+id/edtRegisterPassword"
             android:layout_width="match_parent"
@@ -71,15 +52,6 @@
             android:layout_marginTop="10dp"
             android:hint="Password"
             android:inputType="textPassword" />
-
-        <TextView
-            android:id="@+id/txtPasswordIndicator"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Password must be at least 8 characters (0/8)"
-            android:textColor="@android:color/holo_red_dark"
-            android:textSize="12sp" />
 
         <Button
             android:id="@+id/btnRegister"
