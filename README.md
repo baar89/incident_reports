@@ -24,91 +24,54 @@ File: `app/build.gradle.kts`
 
 > If testing on a real device on the same Wi‑Fi, replace `10.0.2.2` with your computer LAN IP (example: `192.168.1.20`).
 
-
-### Real device connection (fix for `ConnectException`)
-
-If you see `Registration failed: java.net.ConnectException`, it usually means the phone cannot reach PocketBase.
-
-Use this checklist:
-
-1. Start PocketBase with host binding:
-   ```bash
-   ./pocketbase serve --http=0.0.0.0:8090
-   ```
-2. Ensure phone and computer are on the same Wi‑Fi.
-3. In app Login/Register screen, set **PocketBase URL** to your computer LAN IP:
-   - example: `http://192.168.1.20:8090`
-4. Open that same URL from your phone browser to confirm reachability.
-5. Allow firewall inbound rule for port `8090` if needed.
-
-> `http://10.0.2.2:8090` works for Android emulator only.
-
 ---
 
-## 2) Compatibility with your exact schema (admins + responders)
+## 2) Important schema notes for **your current DB**
 
-Your schema has:
-- `admins` auth collection (used for login/register)
-- `incident_reports.responders` relation to `responders` collection (not to `admins`)
+Based on the JSON schema you shared:
 
-This app is now adjusted for that design by using:
-- `admins.extension` as the **linked responder record id**
-- incident query filter on `incident_reports.responders` using that responder id
+- `admins` auth collection exists ✅
+- `incident_reports` exists ✅
+- incident type field is named **`type`** (not `incident_type`) ✅
+- `incident_reports.responders` relation points to **`responders` collection** (`pbc_3325602110`) ⚠️
 
-### Required setup steps
+### Why tasks may not show
 
-1. Create or identify a record in `responders` for each fire staff account.
-2. Copy that responders record `id`.
-3. Set `admins.extension = <responders.id>` for the corresponding admin account.
-   - You can set this during registration in the app using **Responder ID** field, or from PocketBase admin panel.
+Your app logs in as `admins`, but `incident_reports.responders` currently references a different collection (`responders`).
 
-### Required `incident_reports` rules for this schema
-
-Because auth identity is `admins`, but assignment field points to `responders`, rules should compare against `@request.auth.extension`:
-
-
-### Rule error fix: `unknown field "responders"`
-
-If PocketBase shows:
-
-```
-Invalid rule. Raw error: invalid left operand "responders" - unknown field "responders"
-```
-
-it means one of these is true:
-
-1. You are editing rules on the **wrong collection** (for example `admins`, `users`, or `responders`), not `incident_reports`.
-2. The relation field in `incident_reports` is not named `responders` (check exact field name in schema; use that exact name in rule).
-
-Use this checklist:
-
-1. Open **Collections → incident_reports**.
-2. Confirm there is a field named exactly `responders` (same spelling/case).
-3. Put the assignment rule only in `incident_reports` list/view/update rules.
-4. Save and re-test.
-
-For your current schema (`admins` auth + `incident_reports.responders -> responders`), use:
+So this rule in `incident_reports`:
 
 ```text
-@request.auth.id != "" && (responders = @request.auth.extension || responders ?= @request.auth.extension)
+responders = @request.auth.id
 ```
 
-> Do **not** use `@request.auth.id` for assignment matching in this schema unless `incident_reports.responders` actually stores `admins.id`.
+will only work if `responders` stores IDs from the same auth collection. Right now it does not, so assigned-task filtering can fail.
+
+### Recommended fix (best)
+
+In PocketBase Admin UI:
+
+1. Open `incident_reports` collection.
+2. Edit field `responders` relation.
+3. Change relation target collection from `responders` to **`admins`**.
+4. Keep `maxSelect = 1` (or change to multi-select if you want multiple assigned fire admins).
+
+Then use these rules:
 
 - **List Rule**
   ```text
-  @request.auth.id != "" && (responders = @request.auth.extension || responders ?= @request.auth.extension)
+  @request.auth.id != "" && (responders = @request.auth.id || responders ?= @request.auth.id)
   ```
 - **View Rule**
   ```text
-  @request.auth.id != "" && (responders = @request.auth.extension || responders ?= @request.auth.extension)
+  @request.auth.id != "" && (responders = @request.auth.id || responders ?= @request.auth.id)
   ```
 - **Update Rule**
   ```text
-  @request.auth.id != "" && (responders = @request.auth.extension || responders ?= @request.auth.extension)
+  @request.auth.id != "" && (responders = @request.auth.id || responders ?= @request.auth.id)
   ```
 
-> If `extension` is empty, the app cannot resolve assignments and will show a guidance message.
+> The app now supports both single-relation (`=`) and multi-relation (`?=`) filters.
 
 ---
 
@@ -120,7 +83,6 @@ Used fields:
 - `first_name` (text)
 - `last_name` (text)
 - `position` (text)
-- `extension` (**stores linked responders id**)
 - `email` (default auth field)
 - `password` (default auth field)
 
@@ -130,7 +92,7 @@ Used fields:
 - `type` (select/text, e.g. fire/accident/landslide)
 - `description` (text)
 - `status` (select: `pending`, `ongoing`, `resolved`)
-- `responders` (relation to `responders`)
+- `responders` (relation to `admins`) ← important
 - `latitude` (number)
 - `longitude` (number)
 - `incident_image` (file)
@@ -139,7 +101,7 @@ Used fields:
 
 ## 4) Sample API calls
 
-### Register admin (with linked responder id in extension)
+### Register admin
 
 ```bash
 curl -X POST "http://127.0.0.1:8090/api/collections/admins/records" \
@@ -148,7 +110,6 @@ curl -X POST "http://127.0.0.1:8090/api/collections/admins/records" \
     "first_name":"Juan",
     "last_name":"Dela Cruz",
     "position":"Fire Officer",
-    "extension":"<responders_record_id>",
     "email":"juan@fire.local",
     "password":"12345678",
     "passwordConfirm":"12345678"
@@ -167,9 +128,9 @@ curl -X POST "http://127.0.0.1:8090/api/collections/admins/auth-with-password" \
 
 ```bash
 TOKEN="<paste_token>"
-RESPONDER_ID="<responders_record_id>"
+ADMIN_ID="<paste_admin_id>"
 
-curl "http://127.0.0.1:8090/api/collections/incident_reports/records?filter=(responders%20%3D%20%22${RESPONDER_ID}%22%20%7C%7C%20responders%20%3F%3D%20%22${RESPONDER_ID}%22)&sort=-created" \
+curl "http://127.0.0.1:8090/api/collections/incident_reports/records?filter=(responders%20%3D%20%22${ADMIN_ID}%22%20%7C%7C%20responders%20%3F%3D%20%22${ADMIN_ID}%22)&sort=-created" \
   -H "Authorization: Bearer ${TOKEN}"
 ```
 
@@ -198,10 +159,7 @@ curl -X PATCH "http://127.0.0.1:8090/api/collections/incident_reports/records/${
 
 ## 5) Troubleshooting
 
-- **No records in task list**:
-  - ensure `admins.extension` is set to a valid `responders.id`
-  - ensure each incident has matching `incident_reports.responders`
-  - ensure list/view/update rules use `@request.auth.extension`
+- **No records in task list**: check `incident_reports.responders` relation target and rules first.
 - **401/403**: token missing/expired or PocketBase API rules are too strict.
 - **Cannot connect from emulator**: ensure PocketBase is running on `0.0.0.0:8090` and Android URL is `10.0.2.2`.
 - **HTTP blocked**: app enables cleartext traffic for local development.

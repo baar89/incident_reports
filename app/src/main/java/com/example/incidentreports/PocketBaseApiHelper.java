@@ -26,24 +26,20 @@ import java.util.Map;
  * Sample endpoints used in this app:
  * - POST /api/collections/admins/auth-with-password
  * - POST /api/collections/admins/records
- * - GET /api/collections/incident_reports/records?filter=(responders = "<responderId>" || responders ?= "<responderId>")
+ * - GET /api/collections/incident_reports/records?filter=(responders ?= "<adminId>")
  * - PATCH /api/collections/incident_reports/records/{recordId}
  */
 public class PocketBaseApiHelper {
-    private final String baseUrl;
+    public static final String BASE_URL = "http://10.0.2.2:8090";
+
     private final RequestQueue requestQueue;
 
     public PocketBaseApiHelper(Context context) {
-        this(context, new ApiConfigManager(context).getBaseUrl());
-    }
-
-    public PocketBaseApiHelper(Context context, String baseUrl) {
-        this.baseUrl = baseUrl;
         requestQueue = Volley.newRequestQueue(context.getApplicationContext());
     }
 
     public interface AuthCallback {
-        void onSuccess(String token, String userId, String fullName, String responderId);
+        void onSuccess(String token, String userId, String fullName);
 
         void onError(String message);
     }
@@ -67,7 +63,7 @@ public class PocketBaseApiHelper {
     }
 
     public void loginAdmin(String email, String password, AuthCallback callback) {
-        String url = baseUrl + "/api/collections/admins/auth-with-password";
+        String url = BASE_URL + "/api/collections/admins/auth-with-password";
         JSONObject body = new JSONObject();
 
         try {
@@ -85,9 +81,7 @@ public class PocketBaseApiHelper {
                         JSONObject record = response.getJSONObject("record");
                         String userId = record.getString("id");
                         String fullName = record.optString("first_name", "") + " " + record.optString("last_name", "");
-                        // In your DB schema, admins.extension can store the linked responders record id.
-                        String responderId = record.optString("extension", "");
-                        callback.onSuccess(token, userId.trim(), fullName.trim(), responderId.trim());
+                        callback.onSuccess(token, userId.trim(), fullName.trim());
                     } catch (JSONException e) {
                         callback.onError("Unable to parse login response.");
                     }
@@ -102,9 +96,8 @@ public class PocketBaseApiHelper {
                               String position,
                               String email,
                               String password,
-                              String responderId,
                               SimpleCallback callback) {
-        String url = baseUrl + "/api/collections/admins/records";
+        String url = BASE_URL + "/api/collections/admins/records";
         JSONObject body = new JSONObject();
 
         try {
@@ -114,9 +107,6 @@ public class PocketBaseApiHelper {
             body.put("email", email);
             body.put("password", password);
             body.put("passwordConfirm", password);
-            if (responderId != null && !responderId.trim().isEmpty()) {
-                body.put("extension", responderId.trim());
-            }
         } catch (JSONException e) {
             callback.onError(e.getMessage());
             return;
@@ -130,9 +120,8 @@ public class PocketBaseApiHelper {
     }
 
     public void fetchAssignedIncidents(String token, String responderId, IncidentListCallback callback) {
-        // incident_reports.responders is linked to the responders collection in the provided DB schema.
-        String filter = "(responders = \"" + responderId + "\" || responders ?= \"" + responderId + "\")";
-        String url = Uri.parse(baseUrl + "/api/collections/incident_reports/records")
+        String filter = "(responders ?= \"" + responderId + "\")";
+        String url = Uri.parse(BASE_URL + "/api/collections/incident_reports/records")
                 .buildUpon()
                 .appendQueryParameter("filter", filter)
                 .appendQueryParameter("sort", "-created")
@@ -158,7 +147,7 @@ public class PocketBaseApiHelper {
     }
 
     public void fetchIncidentById(String token, String incidentId, IncidentCallback callback) {
-        String url = baseUrl + "/api/collections/incident_reports/records/" + incidentId;
+        String url = BASE_URL + "/api/collections/incident_reports/records/" + incidentId;
         JsonObjectRequest request = new AuthJsonRequest(Request.Method.GET, url, null, token,
                 response -> callback.onSuccess(parseIncident(response)),
                 error -> callback.onError(parseVolleyError(error)));
@@ -166,7 +155,7 @@ public class PocketBaseApiHelper {
     }
 
     public void updateIncidentStatus(String token, String incidentId, String newStatus, SimpleCallback callback) {
-        String url = baseUrl + "/api/collections/incident_reports/records/" + incidentId;
+        String url = BASE_URL + "/api/collections/incident_reports/records/" + incidentId;
         JSONObject body = new JSONObject();
         try {
             body.put("status", newStatus);
@@ -186,15 +175,13 @@ public class PocketBaseApiHelper {
         if (!report.hasImage()) {
             return "";
         }
-        return baseUrl + "/api/files/" + report.getCollectionId() + "/" + report.getId() + "/" + report.getImageFileName();
+        return BASE_URL + "/api/files/" + report.getCollectionId() + "/" + report.getId() + "/" + report.getImageFileName();
     }
 
     private IncidentReport parseIncident(JSONObject obj) {
         String id = obj.optString("id", "");
         String collectionId = obj.optString("collectionId", "");
-        // Your current PocketBase schema uses field name "type".
-        // Keep a fallback to "incident_type" for compatibility with earlier schema versions.
-        String type = obj.optString("type", obj.optString("incident_type", "Unknown"));
+        String type = obj.optString("incident_type", "Unknown");
         String description = obj.optString("description", "No description");
         String status = obj.optString("status", "pending");
         String created = obj.optString("created", "");
