@@ -24,47 +24,82 @@ File: `app/build.gradle.kts`
 
 > If testing on a real device on the same Wi‑Fi, replace `10.0.2.2` with your computer LAN IP (example: `192.168.1.20`).
 
-### C. Create required PocketBase collections
+---
 
-#### `admins` (Auth collection)
+## 2) Important schema notes for **your current DB**
 
-Required fields used by this app:
+Based on the JSON schema you shared:
+
+- `admins` auth collection exists ✅
+- `incident_reports` exists ✅
+- incident type field is named **`type`** (not `incident_type`) ✅
+- `incident_reports.responders` relation points to **`responders` collection** (`pbc_3325602110`) ⚠️
+
+### Why tasks may not show
+
+Your app logs in as `admins`, but `incident_reports.responders` currently references a different collection (`responders`).
+
+So this rule in `incident_reports`:
+
+```text
+responders = @request.auth.id
+```
+
+will only work if `responders` stores IDs from the same auth collection. Right now it does not, so assigned-task filtering can fail.
+
+### Recommended fix (best)
+
+In PocketBase Admin UI:
+
+1. Open `incident_reports` collection.
+2. Edit field `responders` relation.
+3. Change relation target collection from `responders` to **`admins`**.
+4. Keep `maxSelect = 1` (or change to multi-select if you want multiple assigned fire admins).
+
+Then use these rules:
+
+- **List Rule**
+  ```text
+  @request.auth.id != "" && (responders = @request.auth.id || responders ?= @request.auth.id)
+  ```
+- **View Rule**
+  ```text
+  @request.auth.id != "" && (responders = @request.auth.id || responders ?= @request.auth.id)
+  ```
+- **Update Rule**
+  ```text
+  @request.auth.id != "" && (responders = @request.auth.id || responders ?= @request.auth.id)
+  ```
+
+> The app now supports both single-relation (`=`) and multi-relation (`?=`) filters.
+
+---
+
+## 3) Collection fields expected by the app
+
+### `admins` (Auth collection)
+
+Used fields:
 - `first_name` (text)
 - `last_name` (text)
 - `position` (text)
 - `email` (default auth field)
 - `password` (default auth field)
 
-#### `incident_reports` (base collection)
+### `incident_reports` (base collection)
 
-Recommended fields:
-- `incident_type` (text)
+Used fields:
+- `type` (select/text, e.g. fire/accident/landslide)
 - `description` (text)
 - `status` (select: `pending`, `ongoing`, `resolved`)
-- `responders` (relation or multi-relation to `admins`)
-- `latitude` (text or number)
-- `longitude` (text or number)
+- `responders` (relation to `admins`) ← important
+- `latitude` (number)
+- `longitude` (number)
 - `incident_image` (file)
 
-### D. Set API rules (important)
+---
 
-Allow authenticated admins to:
-- list/read incidents assigned to themselves
-- update status on assigned incidents
-
-Example list rule (adjust to your schema):
-
-```text
-@request.auth.id != "" && responders ?= @request.auth.id
-```
-
-Example update rule:
-
-```text
-@request.auth.id != "" && responders ?= @request.auth.id
-```
-
-## 2) Sample API calls
+## 4) Sample API calls
 
 ### Register admin
 
@@ -95,7 +130,7 @@ curl -X POST "http://127.0.0.1:8090/api/collections/admins/auth-with-password" \
 TOKEN="<paste_token>"
 ADMIN_ID="<paste_admin_id>"
 
-curl "http://127.0.0.1:8090/api/collections/incident_reports/records?filter=(responders%20%3F%3D%20%22${ADMIN_ID}%22)&sort=-created" \
+curl "http://127.0.0.1:8090/api/collections/incident_reports/records?filter=(responders%20%3D%20%22${ADMIN_ID}%22%20%7C%7C%20responders%20%3F%3D%20%22${ADMIN_ID}%22)&sort=-created" \
   -H "Authorization: Bearer ${TOKEN}"
 ```
 
@@ -120,9 +155,11 @@ curl -X PATCH "http://127.0.0.1:8090/api/collections/incident_reports/records/${
   -d '{"status":"resolved"}'
 ```
 
-## 3) Troubleshooting
+---
 
+## 5) Troubleshooting
+
+- **No records in task list**: check `incident_reports.responders` relation target and rules first.
+- **401/403**: token missing/expired or PocketBase API rules are too strict.
 - **Cannot connect from emulator**: ensure PocketBase is running on `0.0.0.0:8090` and Android URL is `10.0.2.2`.
 - **HTTP blocked**: app enables cleartext traffic for local development.
-- **No records in task list**: verify `responders` includes logged-in admin id and list rule allows it.
-- **401/403**: token missing/expired or PocketBase API rules are too strict.
