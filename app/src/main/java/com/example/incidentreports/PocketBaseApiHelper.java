@@ -26,11 +26,11 @@ import java.util.Map;
  * Sample endpoints used in this app:
  * - POST /api/collections/admins/auth-with-password
  * - POST /api/collections/admins/records
- * - GET /api/collections/incident_reports/records?filter=(responders = "<responderId>" || responders ?= "<responderId>")
+ * - GET /api/collections/incident_reports/records?filter=(responders ?= "<adminId>")
  * - PATCH /api/collections/incident_reports/records/{recordId}
  */
 public class PocketBaseApiHelper {
-    public static final String BASE_URL = BuildConfig.POCKETBASE_URL;
+    public static final String BASE_URL = "http://10.0.2.2:8090";
 
     private final RequestQueue requestQueue;
 
@@ -39,7 +39,7 @@ public class PocketBaseApiHelper {
     }
 
     public interface AuthCallback {
-        void onSuccess(String token, String userId, String fullName, String responderId);
+        void onSuccess(String token, String userId, String fullName);
 
         void onError(String message);
     }
@@ -81,9 +81,7 @@ public class PocketBaseApiHelper {
                         JSONObject record = response.getJSONObject("record");
                         String userId = record.getString("id");
                         String fullName = record.optString("first_name", "") + " " + record.optString("last_name", "");
-                        // In your DB schema, admins.extension can store the linked responders record id.
-                        String responderId = record.optString("extension", "");
-                        callback.onSuccess(token, userId.trim(), fullName.trim(), responderId.trim());
+                        callback.onSuccess(token, userId.trim(), fullName.trim());
                     } catch (JSONException e) {
                         callback.onError("Unable to parse login response.");
                     }
@@ -98,7 +96,6 @@ public class PocketBaseApiHelper {
                               String position,
                               String email,
                               String password,
-                              String responderId,
                               SimpleCallback callback) {
         String url = BASE_URL + "/api/collections/admins/records";
         JSONObject body = new JSONObject();
@@ -110,9 +107,6 @@ public class PocketBaseApiHelper {
             body.put("email", email);
             body.put("password", password);
             body.put("passwordConfirm", password);
-            if (responderId != null && !responderId.trim().isEmpty()) {
-                body.put("extension", responderId.trim());
-            }
         } catch (JSONException e) {
             callback.onError(e.getMessage());
             return;
@@ -126,8 +120,7 @@ public class PocketBaseApiHelper {
     }
 
     public void fetchAssignedIncidents(String token, String responderId, IncidentListCallback callback) {
-        // incident_reports.responders is linked to the responders collection in the provided DB schema.
-        String filter = "(responders = \"" + responderId + "\" || responders ?= \"" + responderId + "\")";
+        String filter = "(responders ?= \"" + responderId + "\")";
         String url = Uri.parse(BASE_URL + "/api/collections/incident_reports/records")
                 .buildUpon()
                 .appendQueryParameter("filter", filter)
@@ -188,9 +181,7 @@ public class PocketBaseApiHelper {
     private IncidentReport parseIncident(JSONObject obj) {
         String id = obj.optString("id", "");
         String collectionId = obj.optString("collectionId", "");
-        // Your current PocketBase schema uses field name "type".
-        // Keep a fallback to "incident_type" for compatibility with earlier schema versions.
-        String type = obj.optString("type", obj.optString("incident_type", "Unknown"));
+        String type = obj.optString("incident_type", "Unknown");
         String description = obj.optString("description", "No description");
         String status = obj.optString("status", "pending");
         String created = obj.optString("created", "");

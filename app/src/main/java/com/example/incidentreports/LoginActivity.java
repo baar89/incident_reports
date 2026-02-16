@@ -54,9 +54,9 @@ public class LoginActivity extends AppCompatActivity {
         setLoading(true);
         apiHelper.loginAdmin(email, password, new PocketBaseApiHelper.AuthCallback() {
             @Override
-            public void onSuccess(String token, String userId, String fullName, String responderId) {
+            public void onSuccess(String token, String userId, String fullName) {
                 setLoading(false);
-                sessionManager.saveSession(token, userId, fullName, responderId);
+                sessionManager.saveSession(token, userId, fullName);
                 goToTaskList();
             }
 
