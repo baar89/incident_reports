@@ -18,7 +18,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "POCKETBASE_URL", "\"http://10.0.2.2:8090\"")
+        
+        // IMPORTANT: Replace '192.168.1.XX' with your actual IP from 'ipconfig'
+        // Also, you MUST run PocketBase with: pocketbase serve --http="0.0.0.0:8090"
+        buildConfigField("String", "POCKETBASE_URL", "\"http://192.168.1.23:8090\"")
     }
 
     buildTypes {

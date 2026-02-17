@@ -2,14 +2,12 @@ package com.example.incidentreports;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -38,6 +36,9 @@ public class TaskListActivity extends AppCompatActivity {
 
         TextView txtWelcome = findViewById(R.id.txtWelcome);
         txtWelcome.setText("Welcome, " + sessionManager.getFullName());
+
+        ImageButton btnLogout = findViewById(R.id.btnLogout);
+        btnLogout.setOnClickListener(v -> logoutAndGoToLogin());
 
         RecyclerView recyclerView = findViewById(R.id.recyclerIncidents);
         progressBar = findViewById(R.id.progressTasks);
@@ -84,22 +85,8 @@ public class TaskListActivity extends AppCompatActivity {
     private void logoutAndGoToLogin() {
         sessionManager.clearSession();
         Intent intent = new Intent(this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, 101, 0, "Logout");
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == 101) {
-            logoutAndGoToLogin();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 }

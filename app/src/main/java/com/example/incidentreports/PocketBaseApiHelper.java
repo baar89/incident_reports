@@ -1,5 +1,7 @@
 package com.example.incidentreports;
 
+import static com.example.incidentreports.BuildConfig.POCKETBASE_URL;
+
 import android.content.Context;
 import android.net.Uri;
 
@@ -23,14 +25,9 @@ import java.util.Map;
 
 /**
  * Handles REST communication with PocketBase.
- * Sample endpoints used in this app:
- * - POST /api/collections/admins/auth-with-password
- * - POST /api/collections/admins/records
- * - GET /api/collections/incident_reports/records?filter=(responders ?= "<adminId>")
- * - PATCH /api/collections/incident_reports/records/{recordId}
  */
 public class PocketBaseApiHelper {
-    public static final String BASE_URL = "http://10.0.2.2:8090";
+    public static final String BASE_URL = POCKETBASE_URL;
 
     private final RequestQueue requestQueue;
 
@@ -40,25 +37,21 @@ public class PocketBaseApiHelper {
 
     public interface AuthCallback {
         void onSuccess(String token, String userId, String fullName);
-
         void onError(String message);
     }
 
     public interface SimpleCallback {
         void onSuccess();
-
         void onError(String message);
     }
 
     public interface IncidentListCallback {
         void onSuccess(List<IncidentReport> incidents);
-
         void onError(String message);
     }
 
     public interface IncidentCallback {
         void onSuccess(IncidentReport incidentReport);
-
         void onError(String message);
     }
 
@@ -79,9 +72,9 @@ public class PocketBaseApiHelper {
                     try {
                         String token = response.getString("token");
                         JSONObject record = response.getJSONObject("record");
-                        String userId = record.getString("id");
+                        String responderId = record.optString("extension", "");
                         String fullName = record.optString("first_name", "") + " " + record.optString("last_name", "");
-                        callback.onSuccess(token, userId.trim(), fullName.trim());
+                        callback.onSuccess(token, responderId.trim(), fullName.trim());
                     } catch (JSONException e) {
                         callback.onError("Unable to parse login response.");
                     }
@@ -93,20 +86,51 @@ public class PocketBaseApiHelper {
 
     public void registerAdmin(String firstName,
                               String lastName,
-                              String position,
                               String email,
                               String password,
+                              String contactNumber,
                               SimpleCallback callback) {
+        
+        // 1. Create Responder record first to get an ID
+        String responderUrl = BASE_URL + "/api/collections/responders/records";
+        JSONObject responderBody = new JSONObject();
+        try {
+            responderBody.put("unit_name", firstName + "'s Unit"); // Default value
+            
+            // Using "Fire" as the user added it to the database options.
+            responderBody.put("department", "Fire");
+
+            responderBody.put("contact_number", contactNumber);
+            responderBody.put("is_available", true);
+        } catch (JSONException e) {
+            callback.onError(e.getMessage());
+            return;
+        }
+
+        JsonObjectRequest responderRequest = new JsonObjectRequest(Request.Method.POST, responderUrl, responderBody,
+                responderResponse -> {
+                    String responderId = responderResponse.optString("id");
+                    
+                    // 2. Now create Admin record with the responderId as 'extension'
+                    createAdminRecord(firstName, lastName, email, password, responderId, callback);
+                },
+                error -> callback.onError("Failed to create responder: " + parseVolleyError(error)));
+
+        requestQueue.add(responderRequest);
+    }
+
+    private void createAdminRecord(String firstName, String lastName, String email, String password, String responderId, SimpleCallback callback) {
         String url = BASE_URL + "/api/collections/admins/records";
         JSONObject body = new JSONObject();
 
         try {
             body.put("first_name", firstName);
             body.put("last_name", lastName);
-            body.put("position", position);
             body.put("email", email);
             body.put("password", password);
             body.put("passwordConfirm", password);
+            body.put("extension", responderId); // Linking to responder
+            body.put("position", "admin"); // Default position
         } catch (JSONException e) {
             callback.onError(e.getMessage());
             return;
@@ -114,7 +138,7 @@ public class PocketBaseApiHelper {
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, body,
                 response -> callback.onSuccess(),
-                error -> callback.onError(parseVolleyError(error)));
+                error -> callback.onError("Failed to create admin: " + parseVolleyError(error)));
 
         requestQueue.add(request);
     }
