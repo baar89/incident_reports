@@ -56,10 +56,18 @@
             android:visibility="gone" />
 
         <Button
-            android:id="@+id/btnRespond"
+            android:id="@+id/btnOpenMap"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:text="Open in Map"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnRespond"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:text="Respond"
             android:visibility="gone" />
 

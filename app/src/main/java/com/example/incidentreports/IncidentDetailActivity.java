@@ -1,5 +1,7 @@
 package com.example.incidentreports;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -24,6 +26,7 @@ public class IncidentDetailActivity extends AppCompatActivity {
     private ImageView imgIncident;
     private Button btnRespond;
     private Button btnResolve;
+    private Button btnOpenMap;
     private ProgressBar progressBar;
 
     private String incidentId;
@@ -52,10 +55,17 @@ public class IncidentDetailActivity extends AppCompatActivity {
         imgIncident = findViewById(R.id.imgIncident);
         btnRespond = findViewById(R.id.btnRespond);
         btnResolve = findViewById(R.id.btnResolve);
+        btnOpenMap = findViewById(R.id.btnOpenMap);
         progressBar = findViewById(R.id.progressDetail);
 
         btnRespond.setOnClickListener(v -> updateStatus("ongoing"));
         btnResolve.setOnClickListener(v -> updateStatus("resolved"));
+        
+        btnOpenMap.setOnClickListener(v -> {
+            if (currentIncident != null) {
+                openMap(currentIncident.getLatitude(), currentIncident.getLongitude());
+            }
+        });
     }
 
     @Override
@@ -105,6 +115,28 @@ public class IncidentDetailActivity extends AppCompatActivity {
         // resolved -> no actions
         btnRespond.setVisibility("pending".equalsIgnoreCase(report.getStatus()) ? View.VISIBLE : View.GONE);
         btnResolve.setVisibility("ongoing".equalsIgnoreCase(report.getStatus()) ? View.VISIBLE : View.GONE);
+        
+        // Show map button if coordinates are available
+        if (report.getLatitude() != null && !report.getLatitude().isEmpty() &&
+            report.getLongitude() != null && !report.getLongitude().isEmpty()) {
+            btnOpenMap.setVisibility(View.VISIBLE);
+        } else {
+            btnOpenMap.setVisibility(View.GONE);
+        }
+    }
+
+    private void openMap(String lat, String lng) {
+        Uri gmmIntentUri = Uri.parse("geo:" + lat + "," + lng + "?q=" + lat + "," + lng + "(Emergency)");
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        if (mapIntent.resolveActivity(getPackageManager()) != null) {
+            startActivity(mapIntent);
+        } else {
+            // Fallback for when Google Maps is not installed
+            Intent webMapIntent = new Intent(Intent.ACTION_VIEW, 
+                Uri.parse("https://www.google.com/maps/search/?api=1&query=" + lat + "," + lng));
+            startActivity(webMapIntent);
+        }
     }
 
     private void updateStatus(String newStatus) {

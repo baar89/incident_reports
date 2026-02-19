@@ -15,8 +15,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class RegisterActivity extends AppCompatActivity {
-    private EditText edtFirstName, edtLastName, edtEmail, edtPassword, edtConfirmPassword, edtContactNumber;
-    private TextView errFirstName, errLastName, errEmail, errPassword, errConfirmPassword, errContact;
+    private EditText edtFirstName, edtMiddleName, edtLastName, edtEmail, edtPassword, edtConfirmPassword, edtContactNumber, edtExtension;
+    private TextView errFirstName, errLastName, errEmail, errPassword, errConfirmPassword, errContact, errExtension;
     private ProgressBar progressBar;
     private Button btnRegister;
 
@@ -31,7 +31,9 @@ public class RegisterActivity extends AppCompatActivity {
 
         // Bind Views
         edtFirstName = findViewById(R.id.edtFirstName);
+        edtMiddleName = findViewById(R.id.edtMiddleName);
         edtLastName = findViewById(R.id.edtLastName);
+        edtExtension = findViewById(R.id.edtExtension);
         edtEmail = findViewById(R.id.edtRegisterEmail);
         edtPassword = findViewById(R.id.edtRegisterPassword);
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
@@ -39,6 +41,7 @@ public class RegisterActivity extends AppCompatActivity {
         
         errFirstName = findViewById(R.id.errFirstName);
         errLastName = findViewById(R.id.errLastName);
+        errExtension = findViewById(R.id.errExtension);
         errEmail = findViewById(R.id.errEmail);
         errPassword = findViewById(R.id.errPassword);
         errConfirmPassword = findViewById(R.id.errConfirmPassword);
@@ -62,7 +65,9 @@ public class RegisterActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) {}
         };
         edtFirstName.addTextChangedListener(commonWatcher);
+        edtMiddleName.addTextChangedListener(commonWatcher);
         edtLastName.addTextChangedListener(commonWatcher);
+        edtExtension.addTextChangedListener(commonWatcher);
         edtEmail.addTextChangedListener(commonWatcher);
         edtPassword.addTextChangedListener(commonWatcher);
         edtConfirmPassword.addTextChangedListener(commonWatcher);
@@ -72,6 +77,7 @@ public class RegisterActivity extends AppCompatActivity {
     private void clearErrors() {
         errFirstName.setVisibility(View.GONE);
         errLastName.setVisibility(View.GONE);
+        errExtension.setVisibility(View.GONE);
         errEmail.setVisibility(View.GONE);
         errPassword.setVisibility(View.GONE);
         errConfirmPassword.setVisibility(View.GONE);
@@ -84,6 +90,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         String fName = edtFirstName.getText().toString().trim();
         String lName = edtLastName.getText().toString().trim();
+        String extension = edtExtension.getText().toString().trim();
         String email = edtEmail.getText().toString().trim();
         String pass = edtPassword.getText().toString().trim();
         String confPass = edtConfirmPassword.getText().toString().trim();
@@ -95,6 +102,10 @@ public class RegisterActivity extends AppCompatActivity {
         }
         if (lName.isEmpty()) {
             errLastName.setVisibility(View.VISIBLE);
+            isValid = false;
+        }
+        if (extension.isEmpty()) {
+            errExtension.setVisibility(View.VISIBLE);
             isValid = false;
         }
         if (contact.isEmpty()) {
@@ -122,12 +133,14 @@ public class RegisterActivity extends AppCompatActivity {
 
         setLoading(true);
         String fName = edtFirstName.getText().toString().trim();
+        String mName = edtMiddleName.getText().toString().trim();
         String lName = edtLastName.getText().toString().trim();
+        String extension = edtExtension.getText().toString().trim();
         String email = edtEmail.getText().toString().trim();
         String pass = edtPassword.getText().toString().trim();
         String contact = edtContactNumber.getText().toString().trim();
 
-        apiHelper.registerAdmin(fName, lName, email, pass, contact, new PocketBaseApiHelper.SimpleCallback() {
+        apiHelper.registerAdmin(fName, mName, lName, email, pass, contact, extension, new PocketBaseApiHelper.SimpleCallback() {
             @Override
             public void onSuccess() {
                 setLoading(false);

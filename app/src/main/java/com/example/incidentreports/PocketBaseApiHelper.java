@@ -4,6 +4,7 @@ import static com.example.incidentreports.BuildConfig.POCKETBASE_URL;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -28,6 +29,7 @@ import java.util.Map;
  */
 public class PocketBaseApiHelper {
     public static final String BASE_URL = POCKETBASE_URL;
+    private static final String TAG = "PocketBaseApiHelper";
 
     private final RequestQueue requestQueue;
 
@@ -72,8 +74,9 @@ public class PocketBaseApiHelper {
                     try {
                         String token = response.getString("token");
                         JSONObject record = response.getJSONObject("record");
-                        String responderId = record.optString("extension", "");
+                        String responderId = record.optString("responder", "");
                         String fullName = record.optString("first_name", "") + " " + record.optString("last_name", "");
+                        Log.d(TAG, "Login successful. ResponderID: " + responderId);
                         callback.onSuccess(token, responderId.trim(), fullName.trim());
                     } catch (JSONException e) {
                         callback.onError("Unable to parse login response.");
@@ -84,11 +87,13 @@ public class PocketBaseApiHelper {
         requestQueue.add(request);
     }
 
-    public void registerAdmin(String firstName,
-                              String lastName,
-                              String email,
-                              String password,
-                              String contactNumber,
+    public void registerAdmin(String firstName, 
+                              String middleName, 
+                              String lastName, 
+                              String email, 
+                              String password, 
+                              String contactNumber, 
+                              String extension,
                               SimpleCallback callback) {
         
         // 1. Create Responder record first to get an ID
@@ -96,10 +101,7 @@ public class PocketBaseApiHelper {
         JSONObject responderBody = new JSONObject();
         try {
             responderBody.put("unit_name", firstName + "'s Unit"); // Default value
-            
-            // Using "Fire" as the user added it to the database options.
             responderBody.put("department", "Fire");
-
             responderBody.put("contact_number", contactNumber);
             responderBody.put("is_available", true);
         } catch (JSONException e) {
@@ -111,25 +113,34 @@ public class PocketBaseApiHelper {
                 responderResponse -> {
                     String responderId = responderResponse.optString("id");
                     
-                    // 2. Now create Admin record with the responderId as 'extension'
-                    createAdminRecord(firstName, lastName, email, password, responderId, callback);
+                    // 2. Now create Admin record with the responderId
+                    createAdminRecord(firstName, middleName, lastName, email, password, responderId, extension, callback);
                 },
                 error -> callback.onError("Failed to create responder: " + parseVolleyError(error)));
 
         requestQueue.add(responderRequest);
     }
 
-    private void createAdminRecord(String firstName, String lastName, String email, String password, String responderId, SimpleCallback callback) {
+    private void createAdminRecord(String firstName, 
+                                   String middleName, 
+                                   String lastName, 
+                                   String email, 
+                                   String password, 
+                                   String responderId, 
+                                   String extension, 
+                                   SimpleCallback callback) {
         String url = BASE_URL + "/api/collections/admins/records";
         JSONObject body = new JSONObject();
 
         try {
             body.put("first_name", firstName);
+            body.put("middle_name", middleName);
             body.put("last_name", lastName);
             body.put("email", email);
             body.put("password", password);
             body.put("passwordConfirm", password);
-            body.put("extension", responderId); // Linking to responder
+            body.put("responder", responderId);
+            body.put("extension", extension);
             body.put("position", "admin"); // Default position
         } catch (JSONException e) {
             callback.onError(e.getMessage());
@@ -144,7 +155,11 @@ public class PocketBaseApiHelper {
     }
 
     public void fetchAssignedIncidents(String token, String responderId, IncidentListCallback callback) {
-        String filter = "(responders ?= \"" + responderId + "\")";
+        // Use ?= which is the standard PocketBase operator for relation fields
+        String filter = "responders ?= \"" + responderId + "\"";
+        
+        Log.d(TAG, "Fetching incidents for responderId: " + responderId + " with filter: " + filter);
+
         String url = Uri.parse(BASE_URL + "/api/collections/incident_reports/records")
                 .buildUpon()
                 .appendQueryParameter("filter", filter)
@@ -155,6 +170,7 @@ public class PocketBaseApiHelper {
                 response -> {
                     List<IncidentReport> incidents = new ArrayList<>();
                     JSONArray items = response.optJSONArray("items");
+                    Log.d(TAG, "Response items count: " + (items != null ? items.length() : 0));
                     if (items != null) {
                         for (int i = 0; i < items.length(); i++) {
                             JSONObject obj = items.optJSONObject(i);
@@ -165,7 +181,10 @@ public class PocketBaseApiHelper {
                     }
                     callback.onSuccess(incidents);
                 },
-                error -> callback.onError(parseVolleyError(error)));
+                error -> {
+                    Log.e(TAG, "Error fetching incidents: " + parseVolleyError(error));
+                    callback.onError(parseVolleyError(error));
+                });
 
         requestQueue.add(request);
     }
@@ -205,12 +224,13 @@ public class PocketBaseApiHelper {
     private IncidentReport parseIncident(JSONObject obj) {
         String id = obj.optString("id", "");
         String collectionId = obj.optString("collectionId", "");
-        String type = obj.optString("incident_type", "Unknown");
+        String type = obj.optString("type", "Unknown");
         String description = obj.optString("description", "No description");
         String status = obj.optString("status", "pending");
         String created = obj.optString("created", "");
         String latitude = obj.optString("latitude", "");
         String longitude = obj.optString("longitude", "");
+        String address = obj.optString("address", "No address");
 
         String image = "";
         Object imgField = obj.opt("incident_image");
@@ -223,7 +243,7 @@ public class PocketBaseApiHelper {
             image = (String) imgField;
         }
 
-        return new IncidentReport(id, collectionId, type, description, status, created, latitude, longitude, image);
+        return new IncidentReport(id, collectionId, type, description, status, created, latitude, longitude, address, image);
     }
 
     private String parseVolleyError(VolleyError error) {

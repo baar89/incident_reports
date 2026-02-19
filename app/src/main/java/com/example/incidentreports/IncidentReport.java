@@ -12,6 +12,7 @@ public class IncidentReport {
     private final String created;
     private final String latitude;
     private final String longitude;
+    private final String address;
     private final String imageFileName;
 
     public IncidentReport(String id,
@@ -22,6 +23,7 @@ public class IncidentReport {
                           String created,
                           String latitude,
                           String longitude,
+                          String address,
                           String imageFileName) {
         this.id = id;
         this.collectionId = collectionId;
@@ -31,6 +33,7 @@ public class IncidentReport {
         this.created = created;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.address = address;
         this.imageFileName = imageFileName;
     }
 
@@ -64,6 +67,10 @@ public class IncidentReport {
 
     public String getLongitude() {
         return longitude;
+    }
+
+    public String getAddress() {
+        return address;
     }
 
     public String getImageFileName() {

@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -42,7 +43,21 @@ public class IncidentAdapter extends RecyclerView.Adapter<IncidentAdapter.Incide
         holder.txtType.setText(report.getType());
         holder.txtDescription.setText(report.getDescription());
         holder.txtDateTime.setText(report.getCreated());
-        holder.txtStatus.setText(report.getStatus());
+        
+        String status = report.getStatus();
+        holder.txtStatus.setText(status != null ? status.toUpperCase() : "UNKNOWN");
+
+        // Apply highlighting based on status
+        int colorResId = R.color.text_label; // default
+        if ("pending".equalsIgnoreCase(status)) {
+            colorResId = R.color.status_pending;
+        } else if ("ongoing".equalsIgnoreCase(status)) {
+            colorResId = R.color.status_ongoing;
+        } else if ("resolved".equalsIgnoreCase(status)) {
+            colorResId = R.color.status_resolved;
+        }
+        
+        holder.txtStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), colorResId));
 
         holder.itemView.setOnClickListener(v -> listener.onIncidentClick(report));
     }

@@ -98,6 +98,47 @@
             app:layout_constraintTop_toBottomOf="@id/containerFirstName"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <!-- Middle Name -->
+        <TextView
+            android:id="@+id/lblMiddleName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MIDDLE NAME (OPTIONAL)"
+            android:textColor="@color/text_label"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/errFirstName" />
+
+        <LinearLayout
+            android:id="@+id/containerMiddleName"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_rounded_input"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            app:layout_constraintTop_toBottomOf="@id/lblMiddleName">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_person" />
+
+            <EditText
+                android:id="@+id/edtMiddleName"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
+                android:background="@null"
+                android:hint="Enter middle name"
+                android:inputType="textPersonName"
+                android:textColor="@color/white"
+                android:textColorHint="@color/text_hint"
+                android:textSize="16sp" />
+        </LinearLayout>
+
         <!-- Last Name -->
         <TextView
             android:id="@+id/lblLastName"
@@ -109,7 +150,7 @@
             android:textSize="12sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/errFirstName" />
+            app:layout_constraintTop_toBottomOf="@id/containerMiddleName" />
 
         <LinearLayout
             android:id="@+id/containerLastName"
@@ -150,6 +191,58 @@
             app:layout_constraintTop_toBottomOf="@id/containerLastName"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <!-- Extension -->
+        <TextView
+            android:id="@+id/lblExtension"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="EXTENSION"
+            android:textColor="@color/text_label"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/errLastName" />
+
+        <LinearLayout
+            android:id="@+id/containerExtension"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_rounded_input"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            app:layout_constraintTop_toBottomOf="@id/lblExtension">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_person" />
+
+            <EditText
+                android:id="@+id/edtExtension"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
+                android:background="@null"
+                android:hint="Enter extension (e.g., Jr.)"
+                android:inputType="textPersonName"
+                android:textColor="@color/white"
+                android:textColorHint="@color/text_hint"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/errExtension"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Extension is required"
+            android:textColor="@color/fire_red"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/containerExtension"
+            app:layout_constraintStart_toStartOf="parent" />
+
         <!-- Contact Number -->
         <TextView
             android:id="@+id/lblContact"
@@ -161,7 +254,7 @@
             android:textSize="12sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/errLastName" />
+            app:layout_constraintTop_toBottomOf="@id/errExtension" />
 
         <LinearLayout
             android:id="@+id/containerContact"
